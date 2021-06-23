@@ -1,36 +1,18 @@
 import psl from 'psl';
+import { MessageItem } from './shared/message';
+import { ExtensionOptions, ComparisonStrategy, SortingOrder, getUserOpts } from './shared/config';
 
 type BookmarkTreeNode = chrome.bookmarks.BookmarkTreeNode;
-type SortingOrder = 'asc' | 'desc';
-type ComparisonStrategy = 'title' | 'url' | 'url_simple';
-interface ExtensionOptions {
-  auto: boolean;
-  order: SortingOrder;
-  compareBy: ComparisonStrategy;
-  folderPlacement: 'top' | 'bottom';
-}
 
 const rootNodeId = '0';
 const comparisonAlgo: Record<
   ComparisonStrategy,
   (a: BookmarkTreeNode, b: BookmarkTreeNode, order: SortingOrder) => number
 > = {
-  title: compareByText,
+  title: compareByTitle,
   url: compareByUrl,
-  url_simple: compareByText,
+  url_simple: compareByUrlSimple,
 };
-
-function getUserOpts(): Partial<ExtensionOptions> {
-  if (localStorage.opts) {
-    try {
-      return JSON.parse(localStorage.opts);
-    } catch (err) {
-      return {};
-    }
-  } else {
-    return {};
-  }
-}
 
 function getUrlFactor(bn: BookmarkTreeNode) {
   try {
@@ -75,32 +57,57 @@ function compareByUrl(a: BookmarkTreeNode, b: BookmarkTreeNode, order: SortingOr
   );
 }
 
-function compareByText(a: BookmarkTreeNode, b: BookmarkTreeNode, order: SortingOrder): number {
-  return a.title.localeCompare(b.title);
+function compareByTitle(a: BookmarkTreeNode, b: BookmarkTreeNode, order: SortingOrder): number {
+  const direction = order === 'asc' ? 1 : -1;
+  return a.title.localeCompare(b.title) * direction;
 }
 
-function sortBookmarkTreeNodes(nodes: BookmarkTreeNode[], pid: string, opts: ExtensionOptions) {
-  let tasks: Promise<unknown>[] = [];
-  const { folderPlacement, compareBy, order } = opts;
-  const { folders, marks } = nodes.reduce<Record<'folders' | 'marks', BookmarkTreeNode[]>>(
+function compareByUrlSimple(a: BookmarkTreeNode, b: BookmarkTreeNode, order: SortingOrder): number {
+  const direction = order === 'asc' ? 1 : -1;
+  const { url: urlA = '' } = a;
+  const { url: urlB = '' } = b;
+  return urlA.localeCompare(urlB) * direction;
+}
+
+function groupBookmarkTreeNodes(nodes: BookmarkTreeNode[]) {
+  type BookmarkTreeNodeGroup = Record<'folders' | 'marks', BookmarkTreeNode[]>;
+  return nodes.reduce<BookmarkTreeNodeGroup>(
     (r, c) => {
       c.children ? r.folders.push(c) : r.marks.push(c);
       return r;
     },
     { folders: [], marks: [] },
   );
+}
+
+function sortBookmarkTreeNodes(
+  nodes: BookmarkTreeNode[],
+  ctx: {
+    pid: string;
+    extensionOpts: ExtensionOptions;
+    folderIgnoreSet: Set<string>;
+  },
+) {
+  let tasks: Promise<unknown>[] = [];
+  const { pid, folderIgnoreSet, extensionOpts } = ctx;
+  const { folderPlacement, compareBy, order } = extensionOpts;
+  const { folders, marks } = groupBookmarkTreeNodes(nodes);
 
   folders.forEach((folder) => {
-    const subTasks = sortBookmarkTreeNodes(folder.children!, folder.id, opts);
+    const { children = [], id: pid } = folder;
+    const subTasks = sortBookmarkTreeNodes(children, { ...ctx, pid });
     tasks = tasks.concat(subTasks);
   });
 
-  if (pid === rootNodeId) return tasks;
+  if (pid === rootNodeId || folderIgnoreSet.has(pid)) return tasks;
 
   const marksAlgo = comparisonAlgo[compareBy];
-  const foldersSorted = folders.sort((a, b) => compareByText(a, b, order));
+  const foldersSorted = folders.sort((a, b) => compareByTitle(a, b, order));
   const marksSorted = marks.sort((a, b) => marksAlgo(a, b, order));
-  const nodesSorted = folderPlacement === 'top' ? foldersSorted.concat(marksSorted) : marksSorted.concat(foldersSorted);
+  const nodesSorted =
+    folderPlacement === 'top'
+      ? foldersSorted.concat(marksSorted)
+      : marksSorted.concat(foldersSorted);
 
   tasks = tasks.concat(
     nodesSorted.map(
@@ -114,29 +121,25 @@ function sortBookmarkTreeNodes(nodes: BookmarkTreeNode[], pid: string, opts: Ext
   return tasks;
 }
 
-const defaultOpts: ExtensionOptions = {
-  auto: false,
-  order: 'asc',
-  compareBy: 'url',
-  folderPlacement: 'top',
-};
 let finishingIndicatorTimeout: NodeJS.Timeout;
 let extensionState: 'sorting' | 'idle' = 'idle';
 
 function sortBookmark() {
-  console.log('sortBookmark');
   if (extensionState === 'sorting') return;
 
   extensionState = 'sorting';
   clearTimeout(finishingIndicatorTimeout);
   chrome.browserAction.setBadgeText({ text: '...' });
 
-  const userOpts: Partial<ExtensionOptions> = getUserOpts();
-  const extensionOpts = { ...defaultOpts, ...userOpts };
-
-  chrome.bookmarks.getTree((tree) => {
+  chrome.bookmarks.getTree(async (tree) => {
     const root = tree[0];
-    const tasks = sortBookmarkTreeNodes(root.children!, root.id, extensionOpts);
+    const extensionOpts = await getUserOpts();
+    const tasks = sortBookmarkTreeNodes(root.children!, {
+      pid: root.id,
+      extensionOpts,
+      folderIgnoreSet: new Set(extensionOpts.folderIgnore),
+    });
+
     Promise.all(tasks).then(() => {
       extensionState = 'idle';
       chrome.browserAction.setBadgeText({ text: 'Done' });
@@ -147,10 +150,18 @@ function sortBookmark() {
   });
 }
 
+async function autoSortBookmark() {
+  const { auto } = await getUserOpts();
+  if (auto) sortBookmark();
+}
+
+chrome.bookmarks.onCreated.addListener(autoSortBookmark);
+chrome.bookmarks.onRemoved.addListener(autoSortBookmark);
+chrome.bookmarks.onChanged.addListener(autoSortBookmark);
+chrome.bookmarks.onMoved.addListener(autoSortBookmark);
+chrome.bookmarks.onChildrenReordered.addListener(autoSortBookmark);
+chrome.bookmarks.onImportEnded.addListener(autoSortBookmark);
 chrome.browserAction.onClicked.addListener(sortBookmark);
-chrome.runtime.onStartup.addListener(() => {
-  console.log('start up');
-});
-chrome.runtime.onSuspend.addListener(() => {
-  console.log('suspend');
+chrome.runtime.onMessage.addListener((message: MessageItem) => {
+  if (message.type === 'saved') sortBookmark();
 });
