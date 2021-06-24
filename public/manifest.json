@@ -1,7 +1,6 @@
 {
   "manifest_version": 2,
   "name": "Marksort",
-  "default_locale": "en",
   "description": "A extension help you order your bookmarks easily.",
   "version": "1.0",
   "icons": {
