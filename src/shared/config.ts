@@ -22,8 +22,8 @@ export const defaultOpts: ExtensionOptions = {
 
 export async function getUserOpts(): Promise<ExtensionOptions> {
   return new Promise<ExtensionOptions>((resolve) => {
-    chrome.storage.sync.get(defaultOpts, items => {
-      resolve(items as ExtensionOptions)
-    })
-  })
+    chrome.storage.sync.get(defaultOpts, (items) => {
+      resolve(items as ExtensionOptions);
+    });
+  });
 }
