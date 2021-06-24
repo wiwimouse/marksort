@@ -1,11 +1,12 @@
 export type SortingOrder = 'asc' | 'desc';
 export type ComparisonStrategy = 'title' | 'url' | 'url_simple';
+export type FolderPlacement = 'top' | 'bottom';
 
 export interface ExtensionOptions {
   auto: boolean;
   order: SortingOrder;
   compareBy: ComparisonStrategy;
-  folderPlacement: 'top' | 'bottom';
+  folderPlacement: FolderPlacement;
   folderIgnore: string[];
 }
 
