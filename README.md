@@ -1,70 +1,14 @@
-# Chrome Extension TypeScript Starter
+<p align="center">
+  <img src="public/icon128.png" />
+</p>
 
-![build](https://github.com/chibat/chrome-extension-typescript-starter/workflows/build/badge.svg)
+<h1 align="center">OrderMarks</h1>
 
-Chrome Extension, TypeScript and Visual Studio Code
+<p align="center">A browser extensions help you order bookmarks easily.</p>
 
-## Prerequisites
-
-* [node + npm](https://nodejs.org/) (Current Version)
-
-## Option
-
-* [Visual Studio Code](https://code.visualstudio.com/)
-
-## Includes the following
-
-* TypeScript
-* Webpack
-* React
-* Jest
-* Example Code
-    * Chrome Storage
-    * Options Version 2
-    * content script
-    * count up badge number
-    * background
-
-## Project Structure
-
-* src/typescript: TypeScript source files
-* src/assets: static files
-* dist: Chrome Extension directory
-* dist/js: Generated JavaScript files
-
-## Setup
-
-```
-npm install
-```
-
-## Import as Visual Studio Code project
-
-...
-
-## Build
-
-```
-npm run build
-```
-
-## Build in watch mode
-
-### terminal
-
-```
-npm run watch
-```
-
-### Visual Studio Code
-
-Run watch mode.
-
-type `Ctrl + Shift + B`
-
-## Load extension to chrome
-
-Load `dist` directory
-
-## Test
-`npx jest` or `npm run test`
+### Feature
+- Support special sorting strategy `SERVICE`.
+  It put bookmarks are the same service together.
+- Support basic sorting methods: Title, URL.
+- Ordering in ascending or descending.
+- Rearrange bookmarks automatically.

@@ -1,7 +1,7 @@
 {
-  "name": "chrome-extension-typescript-starter",
+  "name": "marksort",
   "version": "1.0.0",
-  "description": "chrome-extension-typescript-starter",
+  "description": "A extension help you order your bookmarks easily.",
   "main": "index.js",
   "scripts": {
     "watch": "webpack --config webpack/webpack.dev.js --watch",
@@ -14,9 +14,10 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/chibat/chrome-extension-typescript-starter.git"
+    "url": "https://github.com/wiwimouse/marksort.git"
   },
   "dependencies": {
+    "psl": "^1.8.0",
     "react": "^17.0.1",
     "react-dom": "^17.0.1"
   },
@@ -24,6 +25,7 @@
     "@types/chrome": "0.0.143",
     "@types/jest": "^25.1.4",
     "@types/jquery": "^3.3.33",
+    "@types/psl": "^1.1.0",
     "@types/react": "^17.0.0",
     "@types/react-dom": "^17.0.0",
     "copy-webpack-plugin": "^6.1.0",
