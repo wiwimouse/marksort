@@ -144,7 +144,7 @@ function sortBookmark() {
       extensionState = 'idle';
       chrome.browserAction.setBadgeText({ text: 'Done' });
       finishingIndicatorTimeout = setTimeout(() => {
-        chrome.browserAction.setBadgeText({ text: extensionOpts.auto ? 'Auto' : '' });
+        chrome.browserAction.setBadgeText({ text: '' });
       }, 1000);
     });
   });
