@@ -1,6 +1,6 @@
 {
   "manifest_version": 2,
-  "name": "Marksort",
+  "name": "OrderMarks",
   "description": "A extension help you order your bookmarks easily.",
   "version": "1.0",
   "icons": {

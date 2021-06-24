@@ -99,13 +99,11 @@ const OrderField = (props: {
         <span>**Service**</span>
         <br />
         <span>
-          The Service strategy analyze Url result in place same service together. It order bookmarks
-          follow rules bellow:
+          The Service strategy analyzes URL result in placing same service together. It sorts
+          bookmarks follow rules bellow:
         </span>
         <br />
-        <span>
-          protocol &rarr; domain &rarr; subdomain &rarr; port &rarr; pathname + search + hash
-        </span>
+        <span>{'protocol --> domain --> subdomain --> port --> pathname + search + hash'}</span>
         <br />
         <span>All factors are sorted in alphabetical order.</span>
         <br />
@@ -175,8 +173,6 @@ const OptionPage = () => {
   return (
     <div>
       <form onSubmit={onSubmit}>
-        <h2 style={{ marginTop: 0 }}>Marksort</h2>
-
         <AutoSortField
           auto={auto}
           onChange={(auto) => setExtOpts((state) => ({ ...state, auto }))}
