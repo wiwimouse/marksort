@@ -24,7 +24,6 @@
   "devDependencies": {
     "@types/chrome": "0.0.143",
     "@types/jest": "^25.1.4",
-    "@types/jquery": "^3.3.33",
     "@types/psl": "^1.1.0",
     "@types/react": "^17.0.0",
     "@types/react-dom": "^17.0.0",
