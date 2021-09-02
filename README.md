@@ -7,8 +7,7 @@
 <p align="center">A browser extensions help you order bookmarks easily.</p>
 
 ### Feature
-- Support special sorting strategy `SERVICE`.
-  It put bookmarks are the same service together.
-- Support basic sorting methods: Title, URL.
+- Support sorting strategy `SERVICE`, put bookmarks together which has same service.
+- Support other sorting methods: Title, URL.
 - Ordering in ascending or descending.
 - Rearrange bookmarks automatically.
