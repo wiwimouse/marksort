@@ -4,6 +4,12 @@ import { ExtensionOptions, ComparisonStrategy, SortingOrder, getUserOpts } from 
 
 type BookmarkTreeNode = chrome.bookmarks.BookmarkTreeNode;
 
+const isPslErrorResult = (
+  pslRtn: ReturnType<typeof psl.parse>,
+): pslRtn is psl.ErrorResult<keyof psl.errorCodes> => {
+  return 'error' in pslRtn;
+};
+
 const rootNodeId = '0';
 const comparisonAlgo: Record<
   ComparisonStrategy,
@@ -19,7 +25,7 @@ function getUrlFactor(bn: BookmarkTreeNode) {
     const { protocol, hostname, port, pathname, search, hash } = new URL(bn.url || '');
     const parsedDomain = psl.parse(hostname);
 
-    if (parsedDomain.error) return null;
+    if (isPslErrorResult(parsedDomain)) return null;
 
     const { domain, subdomain } = parsedDomain;
     const protocolUnified = protocol === 'http:' ? 'https:' : protocol;
@@ -129,7 +135,7 @@ function sortBookmark() {
 
   extensionState = 'sorting';
   clearTimeout(finishingIndicatorTimeout);
-  chrome.browserAction.setBadgeText({ text: '...' });
+  chrome.action.setBadgeText({ text: '...' });
 
   chrome.bookmarks.getTree(async (tree) => {
     const root = tree[0];
@@ -142,9 +148,9 @@ function sortBookmark() {
 
     Promise.all(tasks).then(() => {
       extensionState = 'idle';
-      chrome.browserAction.setBadgeText({ text: 'Done' });
+      chrome.action.setBadgeText({ text: 'Done' });
       finishingIndicatorTimeout = setTimeout(() => {
-        chrome.browserAction.setBadgeText({ text: '' });
+        chrome.action.setBadgeText({ text: '' });
       }, 1000);
     });
   });
@@ -161,7 +167,7 @@ chrome.bookmarks.onChanged.addListener(autoSortBookmark);
 chrome.bookmarks.onMoved.addListener(autoSortBookmark);
 chrome.bookmarks.onChildrenReordered.addListener(autoSortBookmark);
 chrome.bookmarks.onImportEnded.addListener(autoSortBookmark);
-chrome.browserAction.onClicked.addListener(sortBookmark);
+chrome.action.onClicked.addListener(sortBookmark);
 chrome.runtime.onMessage.addListener((message: MessageItem) => {
   if (message.type === 'saved') sortBookmark();
 });

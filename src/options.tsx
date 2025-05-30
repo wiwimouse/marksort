@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import ReactDOM from 'react-dom';
+import React, { useEffect, useRef, useState } from 'react';
+import { createRoot } from 'react-dom/client';
 import { MessageItem } from './shared/message';
 import {
   SortingOrder,
@@ -47,74 +47,92 @@ const BookmarkBarField = (props: {
       <span>Ignore bookmark bar</span>
       <br />
       <span className="description">
-        Ignore the bookmark bar, but still sort bookmarks in subfolder.
+        Ignores the bookmark bar, but still sorts bookmarks within its subfolders.
       </span>
     </label>
   );
 };
+
+type SelectValue = '0' | '1' | '2' | '3' | '4' | '5';
+
+const orderOptions: {
+  value: SelectValue;
+  label: string;
+  compareBy: ComparisonStrategy;
+  order: SortingOrder;
+  group: string;
+}[] = [
+  { value: '2', label: 'Service [A-Z]', compareBy: 'url', order: 'asc', group: 'Service' },
+  { value: '3', label: 'Service [Z-A]', compareBy: 'url', order: 'desc', group: 'Service' },
+  { value: '0', label: 'Title [A-Z]', compareBy: 'title', order: 'asc', group: 'Title' },
+  { value: '1', label: 'Title [Z-A]', compareBy: 'title', order: 'desc', group: 'Title' },
+  { value: '4', label: 'URL [A-Z]', compareBy: 'url_simple', order: 'asc', group: 'URL' },
+  { value: '5', label: 'URL [Z-A]', compareBy: 'url_simple', order: 'desc', group: 'URL' },
+];
+
+// Helper to create a key from compareBy and order
+function getOrderKey(compareBy: ComparisonStrategy, order: SortingOrder) {
+  return `${compareBy}-${order}`;
+}
+
+// Generate valueMap from orderOptions using reduce
+const valueMap: Record<string, SelectValue> = orderOptions.reduce(
+  (acc, opt) => {
+    acc[getOrderKey(opt.compareBy, opt.order)] = opt.value;
+    return acc;
+  },
+  {} as Record<string, SelectValue>,
+);
+
+// Build a lookup object for direct access (outside the component)
+const orderOptionMap = orderOptions.reduce(
+  (acc, opt) => {
+    acc[opt.value] = opt;
+    return acc;
+  },
+  {} as Record<SelectValue, (typeof orderOptions)[number]>,
+);
 
 const OrderField = (props: {
   compareBy: ComparisonStrategy;
   order: SortingOrder;
   onChange: (value: { compareBy: ComparisonStrategy; order: SortingOrder }) => void;
 }) => {
-  type SelectValue = '0' | '1' | '2' | '3' | '4' | '5';
-
   const { compareBy, order, onChange } = props;
-  const value: SelectValue =
-    compareBy === 'title' && order === 'asc'
-      ? '0'
-      : compareBy === 'title' && order === 'desc'
-      ? '1'
-      : compareBy === 'url' && order === 'asc'
-      ? '2'
-      : compareBy === 'url' && order === 'desc'
-      ? '3'
-      : compareBy === 'url_simple' && order === 'asc'
-      ? '4'
-      : '5';
-  const onSelectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const value = e.target.value as SelectValue;
+  // Use valueMap generated from orderOptions
+  const value: SelectValue = valueMap[getOrderKey(compareBy, order)] || '0';
 
-    switch (value) {
-      case '0':
-        return onChange({ compareBy: 'title', order: 'asc' });
-      case '1':
-        return onChange({ compareBy: 'title', order: 'desc' });
-      case '2':
-        return onChange({ compareBy: 'url', order: 'asc' });
-      case '3':
-        return onChange({ compareBy: 'url', order: 'desc' });
-      case '4':
-        return onChange({ compareBy: 'url_simple', order: 'asc' });
-      case '5':
-        return onChange({ compareBy: 'url_simple', order: 'desc' });
+  const onSelectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const selected = orderOptionMap[e.target.value as SelectValue];
+    if (selected) {
+      onChange({ compareBy: selected.compareBy, order: selected.order });
     }
   };
 
   return (
     <>
-      <label className="title">Order</label>
+      <label className="title" htmlFor="order-select">
+        Order
+      </label>
       <div className="description">
-        <span>**Service**</span>
+        <strong>Service</strong>
         <br />
         <span>
-          The Service strategy analyzes URL result in placing same service together. It sorts
-          bookmarks follow rules bellow:
+          The Service strategy groups bookmarks by service, sorting them based on the following
+          order:
         </span>
         <br />
-        <span>{'protocol --> domain --> subdomain --> port --> pathname + search + hash'}</span>
+        <span><i>{'protocol --> domain --> subdomain --> port --> path'}</i></span>
         <br />
-        <span>All factors are sorted in alphabetical order.</span>
+        <span>Each component is sorted alphabetically.</span>
         <br />
       </div>
-      <select value={value} onChange={onSelectChange}>
-        <option value="2">Service [A-Z]</option>
-        <option value="3">Service [Z-A]</option>
-        <option value="0">Title [A-Z]</option>
-        <option value="1">Title [Z-A]</option>
-        <option value="4">URL [A-Z]</option>
-        <option value="5">URL [Z-A]</option>
+      <select id="order-select" style={{ marginTop: '0.5em' }} value={value} onChange={onSelectChange}>
+        {orderOptions.map((opt) => (
+          <option key={opt.value} value={opt.value}>
+            {opt.label}
+          </option>
+        ))}
       </select>
     </>
   );
@@ -146,11 +164,10 @@ const FolderPlacementField = (props: {
   );
 };
 
-let savedMsgTimeout: NodeJS.Timeout;
-
 const OptionPage = () => {
   const [extOpts, setExtOpts] = useState<ExtensionOptions>(defaultOpts);
   const [showSavedMsg, setShowSavedMsg] = useState<boolean>(false);
+  const savedMsgTimeout = useRef<NodeJS.Timeout | undefined>(undefined);
 
   useEffect(() => {
     getUserOpts().then(setExtOpts);
@@ -158,11 +175,11 @@ const OptionPage = () => {
 
   const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    clearTimeout(savedMsgTimeout);
+    clearTimeout(savedMsgTimeout.current);
     setShowSavedMsg(false);
     chrome.storage.sync.set(extOpts, () => {
       setShowSavedMsg(true);
-      savedMsgTimeout = setTimeout(() => setShowSavedMsg(false), 1000);
+      savedMsgTimeout.current = setTimeout(() => setShowSavedMsg(false), 1000);
       const messageItem: MessageItem = { type: 'saved' };
       chrome.runtime.sendMessage(messageItem);
     });
@@ -203,9 +220,13 @@ const OptionPage = () => {
   );
 };
 
-ReactDOM.render(
-  <React.StrictMode>
-    <OptionPage />
-  </React.StrictMode>,
-  document.getElementById('root'),
-);
+const container = document.getElementById('root');
+
+if (container) {
+  const root = createRoot(container);
+  root.render(
+    <React.StrictMode>
+      <OptionPage />
+    </React.StrictMode>,
+  );
+}

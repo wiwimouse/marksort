@@ -4,11 +4,11 @@
 
 <h1 align="center">OrderMarks</h1>
 
-<p align="center">A browser extensions help you order bookmarks easily.</p>
+<p align="center">A browser extension that helps you organize your bookmarks with ease.</p>
 
-### Feature
-- Support sorting strategy `SERVICE`
-  It put bookmarks together by analyzing URL to distinguish different services.
-- Support other sorting methods: Title, URL.
-- Ordering in ascending or descending.
-- Rearrange bookmarks automatically.
+### Features
+
+- **Service-based Sorting**: Groups bookmarks by analyzing their URLs to identify different services.
+- **Other Sorting Methods**: Sort bookmarks by Title or URL.
+- **Order Direction**: Arrange bookmarks in ascending or descending order.
+- **Automatic Rearrangement**: Bookmarks are reorganized automatically based on your chosen method.

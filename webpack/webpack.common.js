@@ -11,12 +11,6 @@ module.exports = {
     path: path.join(__dirname, '../dist/js'),
     filename: '[name].js',
   },
-  optimization: {
-    splitChunks: {
-      name: 'vendor',
-      chunks: 'initial',
-    },
-  },
   module: {
     rules: [
       {
@@ -32,7 +26,6 @@ module.exports = {
   plugins: [
     new CopyPlugin({
       patterns: [{ from: '.', to: '../', context: 'public' }],
-      options: {},
     }),
   ],
 };
